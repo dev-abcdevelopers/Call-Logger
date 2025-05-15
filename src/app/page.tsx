@@ -1,103 +1,126 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect } from "react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import Header from "@/components/layout/header"
+import BottomNavigation from "@/components/layout/bottom-navigation"
+import CallsView from "@/components/views/calls-view"
+import ContactsView from "@/components/views/contacts-view"
+import HistoryView from "@/components/views/history-view"
+import VoicemailView from "@/components/views/voicemail-view"
+import BlockedView from "@/components/views/blocked-view"
+import SettingsView from "@/components/views/settings-view"
+import type { CallLog } from "@/hooks/use-calls"
+import { useRouter } from "next/navigation"
+
+export default function CallDashboard() {
+  const [activeTab, setActiveTab] = useState("calls")
+  const [selectedCall, setSelectedCall] = useState<CallLog | null>(null)
+  const [showCallLogs, setShowCallLogs] = useState(false)
+  const [callTypeFilter, setCallTypeFilter] = useState<string | null>(null)
+  const [animateTab, setAnimateTab] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if database exists
+    async function checkDatabase() {
+      try {
+        const response = await fetch("/api/check-database")
+        const data = await response.json()
+
+        if (!data.exists) {
+          // Redirect to import page if database doesn't exist
+          router.push("/import")
+        }
+      } catch (error) {
+        console.error("Error checking database:", error)
+        // If there's an error, assume database doesn't exist
+        router.push("/import")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkDatabase()
+  }, [router])
+
+  const handleCallClick = (call: CallLog) => {
+    setSelectedCall(call)
+    setShowCallLogs(true)
+  }
+
+  const handleCallTypeClick = (type: string | null) => {
+    setCallTypeFilter(type)
+    setSelectedCall(null)
+    setShowCallLogs(true)
+  }
+
+  const closeCallLogs = () => {
+    setShowCallLogs(false)
+    setCallTypeFilter(null)
+  }
+
+  const handleTabChange = (tab: string) => {
+    setAnimateTab(tab)
+    setTimeout(() => {
+      setAnimateTab("")
+    }, 500)
+    setActiveTab(tab)
+    setShowCallLogs(false)
+  }
+
+  // Show loading state while checking database
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="w-16 h-16 border-4 border-purple-400 border-t-purple-600 rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-300">Loading application...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+      <Tabs value={activeTab} className="flex flex-col min-h-screen">
+        <Header activeTab={activeTab} />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <main className="flex-1 p-4 overflow-auto safe-bottom">
+          <TabsContent value="calls" className="mt-0 h-full">
+            <CallsView
+              showCallLogs={showCallLogs}
+              selectedCall={selectedCall}
+              callTypeFilter={callTypeFilter}
+              handleCallClick={handleCallClick}
+              handleCallTypeClick={handleCallTypeClick}
+              closeCallLogs={closeCallLogs}
+              handleTabChange={handleTabChange}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </TabsContent>
+
+          <TabsContent value="contacts" className="mt-0 h-full">
+            <ContactsView />
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-0 h-full">
+            <HistoryView />
+          </TabsContent>
+
+          <TabsContent value="voicemail" className="mt-0 h-full">
+            <VoicemailView />
+          </TabsContent>
+
+          <TabsContent value="blocked" className="mt-0 h-full">
+            <BlockedView />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-0 h-full">
+            <SettingsView />
+          </TabsContent>
+        </main>
+
+        <BottomNavigation activeTab={activeTab} animateTab={animateTab} handleTabChange={handleTabChange} />
+      </Tabs>
     </div>
-  );
+  )
 }
